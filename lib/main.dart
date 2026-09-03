@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'core/engine/ai_orchestrator.dart';
+import 'core/models/generation_result.dart';
 
 void main() => runApp(const RoboLabApp());
 
@@ -67,19 +69,22 @@ class Workspace extends StatefulWidget {
 
 class _WorkspaceState extends State<Workspace> {
   final controller = TextEditingController();
-  final stages = <String>[];
+  final orchestrator = const RoboLabAiOrchestrator();
+  GenerationResult? result;
   bool running = false;
+  String? error;
 
   Future<void> buildProject() async {
     if (controller.text.trim().isEmpty || running) return;
-    setState(() { running = true; stages.clear(); });
-    const pipeline = ['Understand requirements', 'Plan architecture', 'Validate components and power', 'Generate firmware structure', 'Run verification'];
-    for (final stage in pipeline) {
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      if (!mounted) return;
-      setState(() => stages.add(stage));
+    setState(() { running = true; error = null; result = null; });
+    try {
+      final generated = await orchestrator.generate(controller.text);
+      if (mounted) setState(() => result = generated);
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Invalid argument(s): ', ''));
+    } finally {
+      if (mounted) setState(() => running = false);
     }
-    if (mounted) setState(() { running = false; stages.add('Draft ready — backend generation and compilation will plug into this pipeline.'); });
   }
 
   @override
@@ -90,9 +95,29 @@ class _WorkspaceState extends State<Workspace> {
         const SizedBox(height: 18),
         TextField(controller: controller, minLines: 5, maxLines: 8, decoration: const InputDecoration(hintText: 'Example: Build a line-following robot with Arduino, IR sensors and a motor driver.', border: OutlineInputBorder())),
         const SizedBox(height: 12),
-        FilledButton.icon(onPressed: buildProject, icon: running ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.play_arrow), label: Text(running ? 'Running pipeline…' : 'Build project')),
+        FilledButton.icon(onPressed: buildProject, icon: running ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.play_arrow), label: Text(running ? 'Building…' : 'Build project')),
+        if (error != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(error!, style: const TextStyle(fontWeight: FontWeight.bold))),
+        if (result != null) _resultView(result!),
+      ]);
+
+  Widget _resultView(GenerationResult r) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const SizedBox(height: 20),
-        if (stages.isNotEmpty) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: stages.map((s) => Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Row(children: [Icon(s.startsWith('Draft') ? Icons.check_circle : Icons.circle_outlined, size: 18), const SizedBox(width: 10), Expanded(child: Text(s))]))).toList()))),
+        Text(r.summary, style: const TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 12),
+        _section('Architecture', r.architecture),
+        _section('Components', r.components),
+        _section('Connections', r.connections),
+        const SizedBox(height: 8),
+        const Text('Verification', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+        ...r.validation.map((v) => Card(child: ListTile(leading: Icon(v.ok ? Icons.check_circle : Icons.error_outline), title: Text(v.name), subtitle: Text(v.details)))),
+        const SizedBox(height: 8),
+        const Text('Firmware', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+        Card(child: Padding(padding: const EdgeInsets.all(14), child: SelectableText(r.firmware))),
+      ]);
+
+  Widget _section(String title, List<String> values) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+        ...values.map((v) => Card(child: ListTile(leading: const Icon(Icons.chevron_right), title: Text(v)))),
       ]);
 
   @override
