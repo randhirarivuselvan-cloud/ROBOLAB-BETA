@@ -12,21 +12,8 @@ class RoboLabEngine {
     final warnings = _warnings(normalized, components);
     final code = _firmware(normalized, components);
     final verification = _verify(normalized, components, connections, code, warnings);
-
     final passed = verification.every((r) => r.ok);
-    return RoboProject(
-      id: id,
-      name: name,
-      prompt: normalized,
-      stage: passed ? ProjectStage.ready : ProjectStage.verification,
-      requirements: requirements,
-      components: components,
-      architecture: architecture,
-      connections: connections,
-      generatedCode: code,
-      warnings: warnings,
-      verification: verification,
-    );
+    return RoboProject(id: id, name: name, prompt: normalized, stage: passed ? ProjectStage.ready : ProjectStage.verification, requirements: requirements, components: components, architecture: architecture, connections: connections, generatedCode: code, warnings: warnings, verification: verification);
   }
 
   List<String> _requirements(String text) {
@@ -69,14 +56,7 @@ class RoboLabEngine {
 
   List<String> _architecture(String text, List<String> components) {
     final t = text.toLowerCase();
-    return [
-      'Controller layer: ${components.first}.',
-      'Sensing layer: acquire and normalize sensor readings.',
-      if (t.contains('motor') || t.contains('servo') || t.contains('stepper')) 'Actuation layer: command actuators through appropriate drivers.',
-      if (t.contains('bluetooth') || t.contains('wifi')) 'Communication layer: isolate wireless I/O from control logic.',
-      'Control layer: deterministic state machine / control loop.',
-      'Verification layer: validate requirements, connections, power assumptions and generated firmware.',
-    ];
+    return ['Controller layer: ${components.first}.', 'Sensing layer: acquire and normalize sensor readings.', if (t.contains('motor') || t.contains('servo') || t.contains('stepper')) 'Actuation layer: command actuators through appropriate drivers.', if (t.contains('bluetooth') || t.contains('wifi')) 'Communication layer: isolate wireless I/O from control logic.', 'Control layer: deterministic state machine / control loop.', 'Verification layer: validate requirements, connections, power assumptions and generated firmware.'];
   }
 
   List<String> _connections(String text, List<String> components) {
@@ -106,20 +86,16 @@ class RoboLabEngine {
     final t = text.toLowerCase();
     final isLine = t.contains('line') && (t.contains('follow') || t.contains('follower'));
     final hasMotor = components.any((c) => c.contains('motor'));
-    final sensorSetup = isLine ? 'const int LEFT_SENSOR = 2;\nconst int RIGHT_SENSOR = 3;' : 'const int STATUS_LED = 13;';
-    final loopBody = isLine && hasMotor
-        ? '''\n  const bool left = digitalRead(LEFT_SENSOR);\n  const bool right = digitalRead(RIGHT_SENSOR);\n\n  // Replace these decisions with calibrated sensor thresholds for the exact robot.\n  if (left && right) { stopMotors(); }\n  else if (left) { turnLeft(); }\n  else if (right) { turnRight(); }\n  else { driveForward(); }\n'''
-        : '''\n  // TODO: map the validated hardware specification to concrete pins.\n  // Keep control logic deterministic and non-blocking where possible.\n''';
-    return '''// RoboLab generated firmware scaffold\n// Generated from a structured engineering plan. Verify pinout and electrical limits before flashing.\n\n$sensorSetup\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(STATUS_LED, OUTPUT);\n  ${isLine ? 'pinMode(LEFT_SENSOR, INPUT);\n  pinMode(RIGHT_SENSOR, INPUT);' : ''}\n}\n\nvoid loop() {$loopBody\n}\n\nvoid driveForward() {}\nvoid turnLeft() {}\nvoid turnRight() {}\nvoid stopMotors() {}\n''';
+    final sensorSetup = isLine ? 'const int LEFT_SENSOR = 2;\nconst int RIGHT_SENSOR = 3;\nconst int STATUS_LED = 13;' : 'const int STATUS_LED = 13;';
+    final loopBody = isLine && hasMotor ? '''\n  const bool left = digitalRead(LEFT_SENSOR);\n  const bool right = digitalRead(RIGHT_SENSOR);\n\n  // Calibrate sensor polarity and replace motor functions with the validated driver API.\n  if (left && right) { stopMotors(); }\n  else if (left) { turnLeft(); }\n  else if (right) { turnRight(); }\n  else { driveForward(); }\n''' : '''\n  // Map the validated hardware specification to concrete pins here.\n  // Keep control logic deterministic and non-blocking where possible.\n''';
+    return '''// RoboLab generated firmware scaffold\n// Verify pinout, voltage levels and current limits before flashing.\n\n$sensorSetup\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(STATUS_LED, OUTPUT);\n  ${isLine ? 'pinMode(LEFT_SENSOR, INPUT);\n  pinMode(RIGHT_SENSOR, INPUT);' : ''}\n}\n\nvoid loop() {$loopBody\n}\n\nvoid driveForward() {}\nvoid turnLeft() {}\nvoid turnRight() {}\nvoid stopMotors() {}\n''';
   }
 
-  List<ValidationResult> _verify(String prompt, List<String> components, List<String> connections, String code, List<String> warnings) {
-    return [
-      ValidationResult(ok: prompt.length >= 12, title: 'Requirement completeness', details: prompt.length >= 12 ? 'Request is long enough for an initial engineering pass.' : 'Add controller, inputs, outputs and desired behavior.'),
-      ValidationResult(ok: components.isNotEmpty, title: 'Component coverage', details: '${components.length} candidate component(s) identified.'),
-      ValidationResult(ok: connections.isNotEmpty, title: 'Connection plan', details: connections.isNotEmpty ? '${connections.length} connection rule(s) proposed.' : 'No connection can be safely inferred yet.'),
-      ValidationResult(ok: code.trim().isNotEmpty, title: 'Code generation', details: 'Firmware scaffold generated with explicit hardware-review points.'),
-      ValidationResult(ok: warnings.isNotEmpty, title: 'Engineering review gate', details: 'Review warnings and verify exact component datasheets before hardware use.'),
-    ];
-  }
+  List<ValidationResult> _verify(String prompt, List<String> components, List<String> connections, String code, List<String> warnings) => [
+    ValidationResult(ok: prompt.length >= 12, title: 'Requirement completeness', details: prompt.length >= 12 ? 'Request is long enough for an initial engineering pass.' : 'Add controller, inputs, outputs and desired behavior.'),
+    ValidationResult(ok: components.isNotEmpty, title: 'Component coverage', details: '${components.length} candidate component(s) identified.'),
+    ValidationResult(ok: connections.isNotEmpty, title: 'Connection plan', details: connections.isNotEmpty ? '${connections.length} connection rule(s) proposed.' : 'No connection can be safely inferred yet.'),
+    ValidationResult(ok: code.trim().isNotEmpty, title: 'Code generation', details: 'Firmware scaffold generated with explicit hardware-review points.'),
+    ValidationResult(ok: warnings.isNotEmpty, title: 'Engineering review gate', details: 'Review warnings and verify exact component datasheets before hardware use.'),
+  ];
 }
