@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: robolab-backend
+    runtime: python
+    plan: free
+    rootDir: .
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn main:app --app-dir backend --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: AI_MODEL
+        value: gpt-5.6
+      - key: AI_TIMEOUT_SECONDS
+        value: "60"
+      - key: AI_MAX_RETRIES
+        value: "2"
+      - key: ROBOLAB_AGENT_CONCURRENCY
+        value: "8"
+      - key: ROBOLAB_CORS_ORIGINS
+        value: "*"
+      - key: ROBOLAB_RATE_WINDOW_SECONDS
+        value: "60"
+      - key: ROBOLAB_RATE_LIMIT
+        value: "20"
+      - key: ROBOLAB_DEFAULT_PLAN
+        value: pro

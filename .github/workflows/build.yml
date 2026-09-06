@@ -1,0 +1,56 @@
+name: RoboLab build
+
+on:
+  push:
+    branches: [main, upgrade-48-models]
+  pull_request:
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          python -m compileall -q backend
+          python -m unittest discover -s backend/tests -p 'test_*.py'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android platform files if needed
+        run: flutter create --platforms=android --org com.synapsex.robolab --project-name robolab .
+
+      - name: Flutter dependencies
+        run: flutter pub get
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Flutter tests
+        run: flutter test
+
+      - name: Build release APK
+        run: flutter build apk --release --dart-define=ROBOLAB_API_URL=${{ secrets.ROBOLAB_API_URL }}
+
+      - name: Build release AAB
+        run: flutter build appbundle --release --dart-define=ROBOLAB_API_URL=${{ secrets.ROBOLAB_API_URL }}
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: robolab-android-release
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
