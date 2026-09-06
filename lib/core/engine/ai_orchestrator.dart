@@ -1,3 +1,4 @@
+import '../config/app_config.dart';
 import '../models/generation_result.dart';
 import '../services/api_service.dart';
 import 'robolab_engine.dart';
@@ -14,12 +15,13 @@ class RoboLabAiOrchestrator {
       throw ArgumentError('Describe the project in a little more detail.');
     }
 
-    if (api != null) {
+    final remoteApi = api ?? RoboLabAppConfig.api;
+    if (remoteApi != null) {
       try {
-        final remote = await api!.generateProject(trimmed);
+        final remote = await remoteApi.generateProject(trimmed);
         return GenerationResult.fromJson(remote);
       } catch (_) {
-        // Continue into the deterministic local engine instead of failing the UX.
+        // Preserve a usable offline UX if the deployed backend is temporarily unavailable.
       }
     }
 
@@ -33,7 +35,7 @@ class RoboLabAiOrchestrator {
       validation: project.verification
           .map((v) => GenerationCheck(ok: v.ok, name: v.title, details: v.details))
           .toList(),
-      source: api == null ? 'local-engine' : 'local-fallback',
+      source: remoteApi == null ? 'local-engine' : 'local-fallback',
     );
   }
 }
