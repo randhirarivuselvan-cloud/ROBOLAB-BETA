@@ -1,0 +1,13 @@
+.git
+.github
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+.env
+build
+.dart_tool
+.idea
+.vscode
