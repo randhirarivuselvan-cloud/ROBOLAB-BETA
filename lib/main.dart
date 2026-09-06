@@ -11,7 +11,10 @@ class RoboLabApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'RoboLab',
-        theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: Colors.cyan, brightness: Brightness.dark)),
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.cyan, brightness: Brightness.dark),
+        ),
         home: const RoboLabHome(),
       );
 }
@@ -28,15 +31,25 @@ class _RoboLabHomeState extends State<RoboLabHome> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [_home(), _projects(), const Workspace()];
+    final pages = [_home(), _projects(), const Workspace(), const PremiumPage()];
     return Scaffold(
-      appBar: AppBar(title: const Text('RoboLab', style: TextStyle(fontWeight: FontWeight.w900)), actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.settings_outlined))]),
+      appBar: AppBar(
+        title: const Text('RoboLab', style: TextStyle(fontWeight: FontWeight.w900)),
+        actions: [
+          IconButton(onPressed: () {}, icon: const Icon(Icons.settings_outlined)),
+        ],
+      ),
       body: pages[tab],
-      bottomNavigationBar: NavigationBar(selectedIndex: tab, onDestinationSelected: (v) => setState(() => tab = v), destinations: const [
-        NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
-        NavigationDestination(icon: Icon(Icons.folder_outlined), label: 'Projects'),
-        NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), label: 'AI Workspace'),
-      ]),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: tab,
+        onDestinationSelected: (v) => setState(() => tab = v),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.folder_outlined), label: 'Projects'),
+          NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), label: 'AI Workspace'),
+          NavigationDestination(icon: Icon(Icons.workspace_premium_outlined), label: 'Pro'),
+        ],
+      ),
     );
   }
 
@@ -47,18 +60,24 @@ class _RoboLabHomeState extends State<RoboLabHome> {
         const SizedBox(height: 24),
         FilledButton.icon(onPressed: () => setState(() => tab = 2), icon: const Icon(Icons.auto_awesome), label: const Text('Start with AI')),
         const SizedBox(height: 24),
-        _card('Builder AI', Icons.account_tree_outlined, 'Turn an idea into a structured engineering project.'),
-        _card('Circuit AI', Icons.memory_outlined, 'Plan components, connections and power requirements.'),
-        _card('Code AI', Icons.code, 'Generate maintainable embedded firmware.'),
-        _card('Verification', Icons.verified_outlined, 'Cross-check the project before final output.'),
+        _card('48-Agent Engineering Fleet', Icons.hub_outlined, 'Specialists for architecture, electronics, firmware, robotics, CAD, simulation and verification.'),
+        _card('Consensus Verification', Icons.verified_outlined, 'Independent reviewers challenge the design before the final result.'),
+        _card('Production API', Icons.cloud_done_outlined, 'The Android app can connect to the deployed RoboLab backend.'),
+        _card('Premium Workspace', Icons.workspace_premium_outlined, 'Advanced reports, audits, power analysis and project export.'),
       ]);
 
   Widget _projects() => ListView(padding: const EdgeInsets.all(20), children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Projects', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)), IconButton(onPressed: () => setState(() => projects.add('Untitled Project ${projects.length + 1}')), icon: const Icon(Icons.add_circle_outline))]),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const Text('Projects', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+          IconButton(onPressed: () => setState(() => projects.add('Untitled Project ${projects.length + 1}')), icon: const Icon(Icons.add_circle_outline)),
+        ]),
         ...projects.map((p) => Card(child: ListTile(leading: const Icon(Icons.smart_toy_outlined), title: Text(p), subtitle: const Text('RoboLab project'), trailing: const Icon(Icons.chevron_right)))),
       ]);
 
-  Widget _card(String title, IconData icon, String subtitle) => Card(margin: const EdgeInsets.only(bottom: 12), child: ListTile(contentPadding: const EdgeInsets.all(16), leading: CircleAvatar(child: Icon(icon)), title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(subtitle)));
+  Widget _card(String title, IconData icon, String subtitle) => Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: ListTile(contentPadding: const EdgeInsets.all(16), leading: CircleAvatar(child: Icon(icon)), title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(subtitle)),
+      );
 }
 
 class Workspace extends StatefulWidget {
@@ -103,6 +122,8 @@ class _WorkspaceState extends State<Workspace> {
   Widget _resultView(GenerationResult r) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const SizedBox(height: 20),
         Text(r.summary, style: const TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        Chip(label: Text(r.source)),
         const SizedBox(height: 12),
         _section('Architecture', r.architecture),
         _section('Components', r.components),
@@ -122,4 +143,39 @@ class _WorkspaceState extends State<Workspace> {
 
   @override
   void dispose() { controller.dispose(); super.dispose(); }
+}
+
+class PremiumPage extends StatelessWidget {
+  const PremiumPage({super.key});
+
+  static const features = <String>[
+    'Full 48-agent engineering review',
+    'Consensus synthesis + independent specialist reports',
+    'Advanced circuit and power-path validation',
+    'Firmware review and debugging analysis',
+    'CAD-ready mechanical specifications',
+    'Simulation-ready test plans',
+    'Project JSON export',
+    'Priority generation controls',
+  ];
+
+  @override
+  Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(20), children: [
+        Row(children: const [
+          Icon(Icons.workspace_premium, size: 34),
+          SizedBox(width: 10),
+          Text('RoboLab Pro', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
+        ]),
+        const SizedBox(height: 8),
+        const Text('Advanced engineering tools for serious robotics projects.'),
+        const SizedBox(height: 20),
+        Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('₹99 / month', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
+          const Text('or ₹799 / year'),
+          const SizedBox(height: 16),
+          ...features.map((f) => Padding(padding: const EdgeInsets.only(bottom: 10), child: Row(children: [const Icon(Icons.check_circle_outline, size: 20), const SizedBox(width: 8), Expanded(child: Text(f))]))),
+          const SizedBox(height: 8),
+          FilledButton.icon(onPressed: () {}, icon: const Icon(Icons.lock_open), label: const Text('Premium — Beta unlocked')),
+        ]))),
+      ]);
 }
